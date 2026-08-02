@@ -11,18 +11,22 @@ on:
       minutes:
         description: "⏱ چند دقیقه ربات آنلاین باشه؟ (۱ تا ۳۵۶)"
         required: true
-        default: 60
-        type: number
+        default: "356"
+        type: string
       wipe_db:
         description: "🗑 دیتابیس پاک بشه؟ (برای تست از صفر — پیش‌فرض: نه)"
         required: false
         default: false
         type: boolean
+  schedule:
+    # 🕒 هر ۶ ساعت خودکار بالا می‌آید — در صف می‌ایستد و درست وقتی قبلی
+    #    تمام شد شروع می‌شود (نگهبان: cancel-in-progress خاموش است) → پوشش ۲۴/۷
+    - cron: "13 */6 * * *"
 
-# اگه یه Run جدید بزنی، قبلی لغو می‌شه (جلوگیری از تداخل پولینگ تلگرام)
+# ران بعدی را لغو نکن — بگذار صف بایستد تا قبلی تمام شود و بی‌درز مچ شود
 concurrency:
   group: run-ariamir-orders
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: write  # برای ذخیره دیتابیسِ رمزشده در برنچ db-backup بین اجراها
@@ -77,13 +81,17 @@ jobs:
 
       - name: ⏱ اعتبارسنجی زمان
         run: |
-          MIN="${{ github.event.inputs.minutes || '60' }}"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            MIN="345"   # اجرای خودکار نگهبان — هر ۶ ساعت (سقف مؤثر جاب)
+          else
+            MIN="${{ github.event.inputs.minutes || '356' }}"
+          fi
           if ! [[ "$MIN" =~ ^[0-9]+$ ]] || [ "$MIN" -lt 1 ] || [ "$MIN" -gt 356 ]; then
             echo "::error::⏱ زمان باید بین ۱ تا ۳۵۶ دقیقه باشه (سقف هر Job شش ساعته)"
             exit 1
           fi
           echo "MINUTES=$MIN" >> "$GITHUB_ENV"
-          echo "✅ ربات برای **$MIN دقیقه** آنلاین می‌شه"
+          echo "✅ ربات برای **$MIN دقیقه** آنلاین می‌شه (${{ github.event_name }})"
 
       - name: 🖥 نمایش ظرفیت رانر
         run: |
