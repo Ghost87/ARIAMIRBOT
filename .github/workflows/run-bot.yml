@@ -44,6 +44,8 @@ jobs:
       ADMIN_USER_IDS: ${{ secrets.ADMIN_USER_IDS }}
       ADMIN_GROUP_ID: ${{ secrets.ADMIN_GROUP_ID }}
       GH_PAT: ${{ secrets.GH_PAT }}
+      # ─── v3.5: پل وب‌پنل (Contents API روی برنچ db-backup — اسنپ‌شات و فرمان‌ها) ───
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # ─── v3.0: هوش مصنوعی (اختیاری — خالی = خاموش امن) ───
       AI_API_KEY: ${{ secrets.AI_API_KEY }}
       AI_BASE_URL: ${{ secrets.AI_BASE_URL }}
