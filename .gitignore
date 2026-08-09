@@ -1,0 +1,18 @@
+# secrets & runtime
+.env
+data/
+venv/
+*.log
+
+# رمزگشایی‌های محلی
+decrypted/
+src.tgz
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,58 @@
+name: 🐕 Bot Watchdog (auto-restart)
+
+# 🐕 نگهبان ربات ARIAMIR Orders — هر ۳۰ دقیقه
+# اگر هیچ اجرای فعال یا درصفی از run-bot.yml نباشد، خودکار یک اجرای
+# تازه می‌سازد → ربات عملاً ۲۴/۷ روشن می‌ماند. (ریپو پابلیک = رایگان ✨)
+# خاموش‌کردن کامل: این ورک‌فلو را Disable کن + ران جاری را Cancel.
+
+on:
+  schedule:
+    # دقیقه‌های ۷ و ۳۷ — برای پوشش دقیق بین اجراهای ۶‌ساعته (cron: 13 */6)
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+concurrency:
+  group: watchdog-ariamir-orders
+  cancel-in-progress: false
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 🐕 بررسی وضعیت و راه‌اندازی مجدد در صورت نیاز
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -e
+          api() {
+            curl -sf -H "Authorization: Bearer $GH_TOKEN" \
+                 -H "Accept: application/vnd.github+json" "$@"
+          }
+          BUSY=0
+          for S in in_progress queued waiting requested; do
+            C=$(api "https://api.github.com/repos/$REPO/actions/workflows/run-bot.yml/runs?status=$S&per_page=1" \
+              | python3 -c "import sys,json;print(json.load(sys.stdin).get('total_count',0))")
+            BUSY=$((BUSY + C))
+          done
+          if [ "$BUSY" = "0" ]; then
+            echo "⛔ نگهبان: هیچ اجرای فعالی نیست — ساخت اجرای تازه ۳۵۶ دقیقه‌ای..."
+            api -X POST \
+              "https://api.github.com/repos/$REPO/actions/workflows/run-bot.yml/dispatches" \
+              -d '{"ref":"main","inputs":{"minutes":"356","wipe_db":"false"}}'
+            echo "🚀 ربات دوباره روشن شد."
+            {
+              echo "### 🐕 نگهبان ARIAMIR Orders"
+              echo "- وضعیت: ⚠️ ربات پایین بود → 🚀 ری‌استارت شد ($(date -u +'%H:%M') UTC)"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "✅ نگهبان: ربات روشن یا در صف است (BUSY=$BUSY) — مداخله لازم نیست."
+            {
+              echo "### 🐕 نگهبان ARIAMIR Orders"
+              echo "- وضعیت: ✅ ربات فعال است — BUSY=$BUSY ($(date -u +'%H:%M') UTC)"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

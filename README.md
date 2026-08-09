@@ -1,67 +1,95 @@
-# ARIAMIRBOT — ARIAMIR OS v4.0
+# ARIAMIRBOT — ARIAMIR Orders
 
 ربات ثبت سفارش و پرداخت خدمات دیجیتال — آریامیر
-**ARIAMIR Orders Bot · order intake, payment & secure file delivery**
+**ARIAMIR Orders Bot · order intake, card-to-card payment & secure file delivery**
 
-- **Framework:** aiogram 3.30, SQLite, Python 3.11+
-- **Version:** 4.0.0 — ساده، تمیز، بدون دکمه تکراری
-- **Branch:**
-  - `main` → سورس رمز شده `src.enc` (همین برنچ)
-  - `db-backup` → دیتا و پل پنل `panel/snapshot.json.enc`
-
-## چرا فقط `src.enc` می‌بینی؟
-
-سورس به عمد رمز شده‌ست — ریپو پابلیکه ولی کد داخل `src.enc` هست.
-
-این طراحی از روز اول همین بوده (طبق `ARIAMIR-PROMPT.md`):
-
-> Repo `Ghost87/ARIAMIRBOT` (public). Branch `main` = code, contains ONLY `src.enc`
-
-### دیکریپت لوکال
-
-```bash
-DK="Amir_seyedi_1387"  # کلید از ARIAMIR-SECRETS.md
-openssl enc -d -aes-256-cbc -pbkdf2 -md sha256 -in src.enc -pass "pass:$DK" | tar -xz -C /tmp/dec
-ls /tmp/dec
-# bot.py config.py texts.py handlers/ keyboards/ services/ states/ assets/
-```
-
-## v4.0 چی داره؟
-
-- ۶ قدم سفارش به جای ۹، متن طبیعی و دوستانه
-- ۳ ورودی اصلی: 🚀 ثبت پروژه / 📦 سفارش‌هام / 💬 حرف بزنیم
-- آیکون custom emoji از پک Topics (بدون نیاز پرمیوم)
-- کاتالوگ گرید ۲ ستونه، بدون تکرار
-- متصل به سایت ariamir.gt.tc via WP Plugin + Mini App
-
-## نصب سریع (VPS)
-
-```bash
-unzip ariamir-orders-v4-vps.zip
-cp .env.example .env
-nano .env  # BOT_TOKEN
-./install.sh
-# یا
-docker-compose up -d --build
-```
-
-باندل‌ها توی گروه سورس: #234-236 + گروه Arsourcer
-
-## پنل
-
-پنل جدید ۷ بخشه (قبل ۱۲):
-📊 داشبورد / 📦 سفارش‌ها / 🧩 کاتالوگ / 👥 مخاطبان / 📝 محتوا / 💳 مالی / ⚙️ سیستم
-
-> One Place Rule — هر تنظیم فقط یه جا
-
-پیش‌نمایش: `ariamir-v4/panel/index.html`
-
-## اتصال سایت و ربات
-
-- WP Plugin: `bridge/wordpress-plugin.php` → `[ariamir_cta]`
-- API: `panel/api.php` با HMAC
-- Mini App: `bridge/miniapp.html`
+- **Framework:** aiogram 3.30 · SQLite · Python 3.12
+- **Version:** 3.2.1
+- **Branches:**
+  - `main` → کد (سورس رمزشده در `src.enc`) + ورک‌فلوها
+  - `db-backup` → دیتابیس رمزشده و پل پنل وب
 
 ---
 
-ساخته شده با 💚 توسط @ARIAMIR_IR — با اطمینان بساز؛ اعتماد در هر لایه.
+## ⛔ هشدار برای هر ابزار یا دستیار هوش مصنوعی
+
+> **این ریپو را «ساده‌سازی» یا بازنویسی نکن.**
+>
+> فایل `src.enc` یک **آرشیو رمزشده (AES-256) شامل ۳۳ فایل پایتون** است:
+> ۹ هندلر · ۴ کیبورد · ۱۲ سرویس · ۴ استیت · bot.py · config.py
+>
+> اگر آن را باز نکرده‌ای و محتوایش را ندیده‌ای، **حق بازنویسی‌اش را نداری**.
+> کم‌بودن تعداد فایل‌های قابل‌مشاهده **طبیعی و عمدی** است.
+>
+> در تاریخ ۹ آگوست ۲۰۲۶ یک ابزار خودکار این ریپو را با نسخه‌ای
+> ۸۵۹ خطی جایگزین کرد و **۸٬۵۴۴ خط کد** را از بین برد.
+> برای همین `main` اکنون محافظت‌شده است.
+
+---
+
+## چرا سورس رمز شده است؟
+
+ریپو عمومی است تا GitHub Actions رایگان و نامحدود باشد، ولی کد تجاری
+داخل `src.enc` محافظت می‌شود. هنگام اجرا در حافظهٔ موقت باز می‌شود
+و پس از پایان کاملاً پاک می‌گردد.
+
+```bash
+# باز کردن (نیاز به DECRYPT_KEY)
+openssl enc -d -aes-256-cbc -pbkdf2 -md sha256 \
+  -in src.enc -pass "pass:$DECRYPT_KEY" | tar -xz -C ./src
+
+# بستن دوباره — ⚠️ حتماً pycache پاک شود
+find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null
+tar -czf - . | openssl enc -e -aes-256-cbc -pbkdf2 -md sha256 \
+  -pass "pass:$DECRYPT_KEY" -out ../src_new.enc
+```
+
+---
+
+## ساختار فایل‌ها
+
+| فایل | نقش |
+|---|---|
+| `src.enc` | سورس کامل، رمزشده (۳۳ فایل) |
+| `run_encrypted.py` | لانچر — رمزگشایی در tmp و اجرای `bot.py` |
+| `requirements.txt` | وابستگی‌ها |
+| `.github/workflows/run-bot.yml` | **موتور اجرای ۲۴/۷** |
+| `.github/workflows/bot-watchdog.yml` | نگهبان — اگر ربات خوابید بیدارش می‌کند |
+| `decrypt.sh` | اسکریپت کمکی رمزگشایی |
+
+**هر پنج مورد لازم است.** حذف هرکدام ربات را از کار می‌اندازد.
+
+---
+
+## راه‌اندازی
+
+### سکرت‌های لازم
+`Settings → Secrets and variables → Actions`
+
+| سکرت | توضیح |
+|---|---|
+| `BOT_TOKEN` | از @BotFather |
+| `DECRYPT_KEY` | رمز `src.enc` |
+| `ADMIN_USER_IDS` | آیدی عددی ادمین‌ها (با کاما) |
+| `ADMIN_GROUP_ID` | گروه اعلان سفارش‌ها |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | ورود پنل داخل ربات |
+| `AI_API_KEY` | اختیاری — مشاور هوشمند |
+
+### اجرا
+`Actions → 🤖 Run ARIAMIR Orders → Run workflow`
+
+هر ۶ ساعت هم خودکار بالا می‌آید (cron) و دیتابیس بین اجراها
+به‌صورت رمزشده در `db-backup` حفظ می‌شود.
+
+---
+
+## امکانات
+
+ثبت سفارش با فرم پویا · پرداخت کارت‌به‌کارت با فیش · تخفیف و بیعانه ·
+باشگاه مشتریان · آزمون نیازسنجی · مشاور هوشمند · جوین اجباری
+(کانال عمومی/خصوصی/گروه) · پیام همگانی · بکاپ خودکار روزانه ·
+پنل مدیریت داخل ربات · پل پنل وب
+
+---
+
+**ARIAMIR · [@ARIAMIR_IR](https://t.me/ARIAMIR_IR) · [ariamir.gt.tc](https://ariamir.gt.tc)**
