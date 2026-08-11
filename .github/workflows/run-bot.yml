@@ -64,7 +64,7 @@ jobs:
             exit 0
           fi
           if [ -z "$DECRYPT_KEY" ]; then
-            echo "⚠️ DECRYPT_KEY ست نشده — بازیابی دیتابیس ممکن نیست؛ از صفر شروع می‌کنیم"
+            echo "⚠️ سکرت SRC_KEY ست نشده — بازیابی دیتابیس ممکن نیست؛ از صفر شروع می‌کنیم"
             exit 0
           fi
           if curl -sfL \
@@ -74,7 +74,7 @@ jobs:
               -in data/bot.db.enc -out data/bot.db -pass env:DECRYPT_KEY \
               && rm -f data/bot.db.enc \
               && echo "✅ دیتابیس اجرای قبلی رمزگشایی و بازیابی شد 🎉" \
-              || { echo "⚠️ رمزگشایی دیتابیس ناموفق — DECRYPT_KEY با رمز قبلی فرق دارد؟ از صفر می‌رویم"; rm -f data/bot.db; }
+              || { echo "⚠️ رمزگشایی دیتابیس ناموفق — مقدار SRC_KEY درست نیست؟ از صفر می‌رویم"; rm -f data/bot.db; }
           else
             echo "🆕 دیتابیسی از قبل نیست (اولین اجرا) — دیتابیس تازه ساخته می‌شود"
             rm -f data/bot.db
@@ -151,19 +151,26 @@ jobs:
             echo "✅ BOT_TOKEN موجوده"
           fi
           if [ -z "$DECRYPT_KEY" ]; then
-            echo "::error::🔐 سکرت DECRYPT_KEY ست نشده (رمز فایل‌های رمزنگاری‌شده)!"
+            echo "::error::🔐 سکرت SRC_KEY ست نشده (رمز فایل‌های رمزنگاری‌شده)!"
             OK=0
           else
-            echo "✅ DECRYPT_KEY موجوده"
+            echo "✅ SRC_KEY موجوده"
           fi
           [ "$OK" = "1" ] || { echo "برو: Settings → Secrets and variables → Actions"; exit 1; }
 
       - name: 🤖 اجرای ربات (رمزگشایی سورس در حافظه موقت)
         run: |
           echo "🟢 ARIAMIR Orders روشن شد — ${MINUTES} دقیقه در خدمته..."
+          set -o pipefail
           timeout -s TERM "${MINUTES}m" python -u run_encrypted.py 2>&1 | tee bot_run.log
+          CODE=${PIPESTATUS[0]}
+          if [ "$CODE" != "0" ] && [ "$CODE" != "124" ] && [ "$CODE" != "143" ]; then
+            echo "::error::💥 ربات زودتر از موعد متوقف شد (کد خروج $CODE) — انتهای لاگ:"
+            tail -n 25 bot_run.log || true
+            { echo "### 💥 توقف زودهنگام ربات (کد $CODE)"; echo '```'; tail -n 25 bot_run.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            exit "$CODE"
+          fi
           echo "🏁 پایان زمان اجرا (timeout) — ربات تمیز خاموش شد"
-          exit 0
 
       - name: 📊 گزارش این اجرا
         if: always()
@@ -175,7 +182,7 @@ jobs:
         if: always()
         run: |
           if [ ! -f data/bot.db ]; then echo "⏭ دیتابیسی برای ذخیره نیست"; exit 0; fi
-          if [ -z "$DECRYPT_KEY" ]; then echo "⚠️ بدون DECRYPT_KEY ذخیره انجام نمی‌شود"; exit 0; fi
+          if [ -z "$DECRYPT_KEY" ]; then echo "⚠️ بدون SRC_KEY ذخیره انجام نمی‌شود"; exit 0; fi
           openssl enc -aes-256-cbc -pbkdf2 -salt -md sha256 \
             -in data/bot.db -out data/bot.db.enc -pass env:DECRYPT_KEY
           TMP=$(mktemp -d)
@@ -189,7 +196,7 @@ jobs:
           git add data/bot.db.enc
           if git commit -q -m "💾 بکاپ رمزشده دیتابیس — $(date -u +'%Y-%m-%d %H:%M:%S') UTC"; then
             git push -q origin db-backup && echo "✅ دیتابیس رمزشده برای اجرای بعدی ذخیره شد 🔐"
-            echo "- 💾 دیتابیس رمزشده در db-backup ذخیره شد (با همان DECRYPT_KEY باز می‌شود)" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 💾 دیتابیس رمزشده در db-backup ذخیره شد (با همان SRC_KEY باز می‌شود)" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "ℹ️ تغییری در دیتابیس نبود"
           fi

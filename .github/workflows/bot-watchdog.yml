@@ -7,8 +7,8 @@ name: 🐕 Bot Watchdog (auto-restart)
 
 on:
   schedule:
-    # دقیقه‌های ۷ و ۳۷ — برای پوشش دقیق بین اجراهای ۶‌ساعته (cron: 13 */6)
-    - cron: "7,37 * * * *"
+    # هر ۱۵ دقیقه — وقتی ربات قطع شد، حداکثر ۱۵ دقیقه بعد خودش برمی‌گردد
+    - cron: "4,19,34,49 * * * *"
   workflow_dispatch:
 
 permissions:
