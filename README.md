@@ -93,3 +93,6 @@ tar -czf - . | openssl enc -e -aes-256-cbc -pbkdf2 -md sha256 \
 ---
 
 **ARIAMIR · [@ARIAMIR_IR](https://t.me/ARIAMIR_IR) · [ariamir.gt.tc](https://ariamir.gt.tc)**
+
+---
+🎨 **اعتبار آیکون‌ها:** دکمه‌های ربات از پک [Uicons — Flaticon](https://www.flaticon.com/uicons) استفاده می‌کند · بازرنگ‌آمیزی با رنگ برند آریامیر.
