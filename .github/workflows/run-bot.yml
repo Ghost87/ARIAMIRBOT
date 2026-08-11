@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360  # سقف هر Job شش ساعته گیت‌هاب
     env:
-      DECRYPT_KEY: ${{ secrets.DECRYPT_KEY }}
+      DECRYPT_KEY: ${{ secrets.SRC_KEY }}
       BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
       ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
       ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}

@@ -34,14 +34,14 @@
 و پس از پایان کاملاً پاک می‌گردد.
 
 ```bash
-# باز کردن (نیاز به DECRYPT_KEY)
+# باز کردن (نیاز به SRC_KEY)
 openssl enc -d -aes-256-cbc -pbkdf2 -md sha256 \
-  -in src.enc -pass "pass:$DECRYPT_KEY" | tar -xz -C ./src
+  -in src.enc -pass "pass:$SRC_KEY" | tar -xz -C ./src
 
 # بستن دوباره — ⚠️ حتماً pycache پاک شود
 find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null
 tar -czf - . | openssl enc -e -aes-256-cbc -pbkdf2 -md sha256 \
-  -pass "pass:$DECRYPT_KEY" -out ../src_new.enc
+  -pass "pass:$SRC_KEY" -out ../src_new.enc
 ```
 
 ---
@@ -69,7 +69,7 @@ tar -czf - . | openssl enc -e -aes-256-cbc -pbkdf2 -md sha256 \
 | سکرت | توضیح |
 |---|---|
 | `BOT_TOKEN` | از @BotFather |
-| `DECRYPT_KEY` | رمز `src.enc` |
+| `SRC_KEY` | رمز `src.enc` |
 | `ADMIN_USER_IDS` | آیدی عددی ادمین‌ها (با کاما) |
 | `ADMIN_GROUP_ID` | گروه اعلان سفارش‌ها |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | ورود پنل داخل ربات |

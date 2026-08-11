@@ -1,10 +1,10 @@
 #!/bin/bash
 # رمزگشایی محلی سورس — خروجی در پوشهٔ decrypted/
-# استفاده:  DECRYPT_KEY=رمز ./decrypt.sh      یا      ./decrypt.sh رمز
+# استفاده:  SRC_KEY=رمز ./decrypt.sh      یا      ./decrypt.sh رمز
 set -e
-KEY="${DECRYPT_KEY:-$1}"
+KEY="${SRC_KEY:-$1}"
 if [ -z "$KEY" ]; then
-  echo "❌ رمز را بده: DECRYPT_KEY=رمز ./decrypt.sh   یا   ./decrypt.sh رمز"
+  echo "❌ رمز را بده: SRC_KEY=رمز ./decrypt.sh   یا   ./decrypt.sh رمز"
   exit 1
 fi
 mkdir -p decrypted
