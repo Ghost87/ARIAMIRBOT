@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🎨 راهنمای پک ایموجی اختصاصی ARIAMIR</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;background:#0b1020;color:#e5e7eb;line-height:1.9;padding:28px}
+  .wrap{max-width:880px;margin:0 auto}
+  h1{font-size:26px;font-weight:800;margin-bottom:6px}
+  h1 .g{background:linear-gradient(90deg,#6366f1,#8b5cf6,#d946ef);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  p.sub{color:#94a3b8;font-size:14px;margin-bottom:24px}
+  h2{font-size:19px;margin:26px 0 12px;color:#c4b5fd;border-right:4px solid #8b5cf6;padding-right:10px}
+  .card{background:#111827;border:1px solid #1f2937;border-radius:14px;padding:18px 20px;margin-bottom:14px}
+  code{background:#0f172a;color:#e879f9;padding:2px 7px;border-radius:6px;font-size:13px}
+  .warn{background:#3b1d1d;border-color:#7f1d1d;border-left:5px solid #ef4444;color:#fecaca;padding:14px 16px;border-radius:12px;margin-bottom:16px}
+  ol{padding-right:20px}
+  ol li{margin-bottom:8px}
+  b{color:#f1f5f9}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;margin-top:8px}
+  .t{background:#111827;border:1px solid #1f2937;border-radius:10px;padding:6px;text-align:center;font-size:11px;color:#cbd5e1}
+  .t img{width:44px;height:44px}
+  footer{text-align:center;margin-top:30px;color:#64748b;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎨 پک ایموجی اختصاصی <span class="g">ARIAMIR</span></h1>
+  <p class="sub">برای دکمه‌های داخل چت تلگرام — به‌جای ایموجی متنی، آیکون رنگی اختصاصی برند.</p>
+
+  <div class="warn">
+    ⚠️ <b>دو نکته‌ی مهم پیش از شروع:</b>
+    <ol>
+      <li>دکمه‌های تلگرام <b>SVG رندر نمی‌کنند</b>؛ برای «آیکون اختصاصی» روی دکمه باید از <b>ایموجی اختصاصی (custom emoji)</b> استفاده شود.</li>
+      <li>برای فعال‌شدن ایموجی اختصاصی روی دکمه‌ها، ظاهراً <b>مالک ربات باید دارای تلگرام Premium</b> باشد. اگر نبود، تلگرام آن را رد می‌کند و ربات (طبق کد) <b>خودکار به ایموجی متنی برمی‌گردد</b> — یعنی خراب نمی‌شود.</li>
+    </ol>
+  </div>
+
+  <h2>📦 محتوای پک</h2>
+  <div class="card">
+    این فایل شامل <b>PNG شفاف ۵۱۲×۵۱۲</b> برای هر آیکون است (نام فایل = کلید پیکربندی). فایل‌ها در پوشه <code>emoji/</code> هستند.
+  </div>
+
+  <h2>🚀 مرحله‌ی ۱ — ساخت پک ایموجی در BotFather</h2>
+  <div class="card">
+    <ol>
+      <li>در تلگرام به <b>@BotFather</b> پیام بده.</li>
+      <li>دستور <code>/newemojipack</code> را بفرست.</li>
+      <li>یک <b>عنوان</b> و یک <b>نام کوتاه (short name)</b> بده (مثلاً <code>ariamir_ui_v4</code>).</li>
+      <li>هر بار <b>یک ایموجی PNG</b> را آپلود کن و سپس <b>«ایموجی متناظر»</b> را به‌عنوان اسم/نمادش بفرست (BotFather از تو می‌پرسد).</li>
+      <li>دستور <code>/addemoji</code> را برای افزودن بقیه تکرار کن.</li>
+      <li>وقتی تمام شد، BotFather کدهای <b>ID هر ایموجی</b> را نشان می‌دهد (به‌صورت <code>5368...</code>). این همین کدهاست که باید در <code>config.ICON_IDS</code> بگذاری.</li>
+    </ol>
+  </div>
+
+  <h2>🛠 مرحله‌ی ۲ — اتصال به کد ربات</h2>
+  <div class="card">
+    هر ایموجی که در BotFather ساختی، یک <b>ID عددی</b> دارد. آن‌ها را در <code>config.py</code> در دیکشنری <code>ICON_IDS</code> جایگزین کن:
+    <br><br>
+    <code>ICON_IDS: dict[str, str] = {<br>
+    &nbsp;&nbsp;"home": "&lt;ID ایموجی home&gt;",<br>
+    &nbsp;&nbsp;"orders": "&lt;ID ایموجی orders&gt;",<br>
+    &nbsp;&nbsp;"robot": "&lt;ID ایموجی robot&gt;",<br>
+    &nbsp;&nbsp;...<br>
+    }</code>
+    <br><br>
+    کار دیگری لازم نیست — <code>services/icons.py</code> خودش آیکون را روی دکمه نصب می‌کند.
+  </div>
+
+  <h2>🎯 نمونه آیکون‌های پک</h2>
+  <div class="card">
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <footer>ARIAMIR · برند یکپارچه · One brand. The whole world. ✦</footer>
+</div>
+<script>
+  const names = ["home","orders","robot","star","money","shield","rocket","zap","handshake","brain","crown","bag","card","check","back","cancel"];
+  const grid = document.getElementById("grid");
+  names.forEach(n => {
+    const d = document.createElement("div"); d.className = "t";
+    d.innerHTML = `<img src="emoji/${n}.png" alt="${n}" title="${n}"><div>${n}</div>`;
+    grid.appendChild(d);
+  });
+</script>
+</body>
+</html>

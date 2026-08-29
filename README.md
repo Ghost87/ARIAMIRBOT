@@ -51,6 +51,7 @@ tar -czf - . | openssl enc -e -aes-256-cbc -pbkdf2 -md sha256 \
 | فایل | نقش |
 |---|---|
 | `src.enc` | سورس کامل، رمزشده (۳۳ فایل) |
+| `brand/` | 🎨 کیت برند و آیکون‌ها — SVGهای وکتوری، پک ایموجی و هدایت پنل وب ([مشاهده](brand/README.md)) |
 | `run_encrypted.py` | لانچر — رمزگشایی در tmp و اجرای `bot.py` |
 | `requirements.txt` | وابستگی‌ها |
 | `.github/workflows/run-bot.yml` | **موتور اجرای ۲۴/۷** |
@@ -92,7 +93,23 @@ tar -czf - . | openssl enc -e -aes-256-cbc -pbkdf2 -md sha256 \
 
 ---
 
+---
+
+## 🎨 کیت برند و آیکون‌ها
+
+ست کامل آیکون‌های وکتوری برند در پوشه‌ی `brand/` قرار دارد:
+
+- **`brand/icons/`** — ۷۹ آیکون SVG با گرادیان برند (برای وب‌سایت / پنل وب / پرزنت / بنر)
+- **`brand/emoji_pack/`** — ۷۹ PNG شفاف ۵۱۲×۵۱۲ برای «ایموجی اختصاصی» دکمه‌های داخل چت
+- **`brand/webpanel/ariamir_icons.php`** — تابع PHP برای درج SVG در پنل وب
+- **`brand/emoji_guide.html`** — راهنمای آپلود پک ایموجی از @BotFather
+- **`brand/scripts/build_icon_ids.py`** — به‌روزرسانی خودکار `ICON_IDS` در `src.enc`
+
+📖 **[مشاهده‌ی راهنمای کامل کیت برند](brand/README.md)**
+
+---
+
 **ARIAMIR · [@ARIAMIR_IR](https://t.me/ARIAMIR_IR) · [ariamir.gt.tc](https://ariamir.gt.tc)**
 
 ---
-🎨 **اعتبار آیکون‌ها:** دکمه‌های ربات از استیکرهای اختصاصی آریامیر (پایهٔ [Twemoji](https://twemoji.twitter.com/)، لایسنس CC-BY 4.0) + مارک رسمی برند استفاده می‌کند.
+🎨 **اعتبار آیکون‌ها:** دکمه‌های ربات از استیکرهای اختصاصی آریامیر (پایهٔ [Twemoji](https://twemoji.twitter.com/)، لایسنس CC-BY 4.0) + مارک رسمی برند استفاده می‌کند. آیکون‌های وکتوری نرم‌افزاری `brand/icons/` نیز برای وب/پنل/برندینگ در دسترس‌اند.
