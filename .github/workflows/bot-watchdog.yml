@@ -1,9 +1,12 @@
 name: 🐕 Bot Watchdog (auto-restart)
 
-# 🐕 نگهبان ربات ARIAMIR Orders — هر ۳۰ دقیقه
+# 🐕 نگهبان ربات ARIAMIR Orders — «پشتیبان» زنجیرهٔ بی‌وقفه
 # اگر هیچ اجرای فعال یا درصفی از run-bot.yml نباشد، خودکار یک اجرای
-# تازه می‌سازد → ربات عملاً ۲۴/۷ روشن می‌ماند. (ریپو پابلیک = رایگان ✨)
-# خاموش‌کردن کامل: این ورک‌فلو را Disable کن + ران جاری را Cancel.
+# تازه می‌سازد. (ریپو پابلیک = رایگان ✨)
+# ⚠️ گیت‌هاب cron را تضمین نمی‌کند: این نگهبان با وجود تنظیم «هر ۱۵ دقیقه»
+#    در عمل فقط ۳ تا ۴ بار در روز اجرا می‌شد. از v4.2.1 موتور اصلی ۲۴/۷
+#    «زنجیرهٔ بی‌وقفه» داخل run-bot.yml است و این فقط تور ایمنی است.
+# خاموش‌کردن کامل: هر دو ورک‌فلو را Disable کن + ران جاری و ران در صف را Cancel.
 
 on:
   schedule:
@@ -34,7 +37,7 @@ jobs:
                  -H "Accept: application/vnd.github+json" "$@"
           }
           BUSY=0
-          for S in in_progress queued waiting requested; do
+          for S in in_progress queued waiting requested pending; do  # pending = ران رزروشدهٔ زنجیره
             C=$(api "https://api.github.com/repos/$REPO/actions/workflows/run-bot.yml/runs?status=$S&per_page=1" \
               | python3 -c "import sys,json;print(json.load(sys.stdin).get('total_count',0))")
             BUSY=$((BUSY + C))

@@ -4,8 +4,28 @@ name: 🤖 Run ARIAMIR Orders
 #  روش استفاده: تب Actions → 🤖 Run ARIAMIR Orders → Run workflow
 #  ورودی «minutes» = چند دقیقه ربات آنلاین بمونه (۱ تا ۳۵۶)
 #  ریپو پابلیک است ⇒ اجرای Actions روی رانر استاندارد رایگان و نامحدوده ✨
+#
+#  🔗 v4.2.1 — زنجیرهٔ بی‌وقفه (Self-chaining):
+#  هر اجرا وقتی ربات چند دقیقه سالم ماند، «اجرای بعدی» را خودش رزرو می‌کند.
+#  اجرای رزروشده در صف concurrency منتظر می‌ماند و همان لحظه‌ای که این اجرا
+#  تمام شد بالا می‌آید (~۱ دقیقه وقفه به‌جای چند ساعت). cron و نگهبان فقط
+#  پشتیبان‌اند — چون cron گیت‌هاب ساعت‌ها دیر می‌کند یا اصلاً اجرا نمی‌شود.
+#
+#  ⛔ خاموش‌کردن کامل ربات: Actions → این ورک‌فلو → «…» → Disable workflow
+#     (و همین کار برای 🐕 Bot Watchdog) → بعد ران در حال اجرا و ران در صف را Cancel کن.
+#  🚀 اعمال فوری نسخهٔ جدید بعد از push: ران در حال اجرا را Cancel کن —
+#     ران بعدی (که با push ساخته شده) همان لحظه با کد جدید بالا می‌آید.
 # ──────────────────────────────────────────────────────────────
 on:
+  push:
+    # آپدیت کد/لانچر/ورک‌فلو ⇒ یک اجرای تازه با کد جدید در صف می‌ایستد
+    # (جای ران رزروشدهٔ قبلی را می‌گیرد و بعد از ران فعلی بالا می‌آید)
+    branches: [main]
+    paths:
+      - "src.enc"
+      - "run_encrypted.py"
+      - "requirements.txt"
+      - ".github/workflows/run-bot.yml"
   workflow_dispatch:
     inputs:
       minutes:
@@ -19,8 +39,8 @@ on:
         default: false
         type: boolean
   schedule:
-    # 🕒 هر ۶ ساعت خودکار بالا می‌آید — در صف می‌ایستد و درست وقتی قبلی
-    #    تمام شد شروع می‌شود (نگهبان: cancel-in-progress خاموش است) → پوشش ۲۴/۷
+    # 🕒 پشتیبان: هر ۶ ساعت — گیت‌هاب این را با تأخیر ۱ تا ۳ ساعت (یا هرگز) اجرا می‌کند،
+    #    برای همین موتور اصلی ۲۴/۷ «زنجیرهٔ بی‌وقفه» داخل مرحلهٔ اجرای ربات است.
     - cron: "13 */6 * * *"
 
 # ران بعدی را لغو نکن — بگذار صف بایستد تا قبلی تمام شود و بی‌درز مچ شود
@@ -30,6 +50,7 @@ concurrency:
 
 permissions:
   contents: write  # برای ذخیره دیتابیسِ رمزشده در برنچ db-backup بین اجراها
+  actions: write   # 🔗 برای رزرو اجرای بعدی (workflow_dispatch) — زنجیرهٔ بی‌وقفه
 
 jobs:
   run:
@@ -67,9 +88,21 @@ jobs:
             echo "⚠️ سکرت SRC_KEY ست نشده — بازیابی دیتابیس ممکن نیست؛ از صفر شروع می‌کنیم"
             exit 0
           fi
-          if curl -sfL \
+          # ۱) مستقیم از git (بدون کش CDN) — اجرای بعدی چند ثانیه بعد از ذخیرهٔ
+          #    اجرای قبلی شروع می‌شود؛ raw.githubusercontent تا ۵ دقیقه نسخهٔ کهنه می‌دهد.
+          # ۲) اگر نشد: همان روش قبلی (raw) به‌عنوان پشتیبان.
+          GOT=""
+          if git fetch -q --depth=1 origin db-backup 2>/dev/null \
+             && git show FETCH_HEAD:data/bot.db.enc > data/bot.db.enc 2>/dev/null \
+             && [ -s data/bot.db.enc ]; then
+            GOT="git ($(git rev-parse --short FETCH_HEAD))"
+          elif curl -sfL \
              "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/db-backup/data/bot.db.enc" \
              -o data/bot.db.enc && [ -s data/bot.db.enc ]; then
+            GOT="raw"
+          fi
+          if [ -n "$GOT" ]; then
+            echo "📥 دیتابیس رمزشده دریافت شد از: $GOT"
             openssl enc -d -aes-256-cbc -pbkdf2 -md sha256 \
               -in data/bot.db.enc -out data/bot.db -pass env:DECRYPT_KEY \
               && rm -f data/bot.db.enc \
@@ -159,18 +192,59 @@ jobs:
           [ "$OK" = "1" ] || { echo "برو: Settings → Secrets and variables → Actions"; exit 1; }
 
       - name: 🤖 اجرای ربات (رمزگشایی سورس در حافظه موقت)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "🟢 ARIAMIR Orders روشن شد — ${MINUTES} دقیقه در خدمته..."
+
+          # 🔗 زنجیرهٔ بی‌وقفه: اگر ربات بعد از HANDOFF ثانیه هنوز زنده بود، اجرای
+          #    بعدی را همین حالا رزرو کن. ران رزروشده در صف concurrency می‌ماند و
+          #    دقیقاً وقتی این ران تمام شد شروع می‌شود → دیگر منتظر cron نیستیم.
+          #    ضد حلقه: اگر ربات زود کرش کند، رزروی انجام نمی‌شود.
+          HANDOFF=$(( MINUTES * 60 / 2 ))
+          if [ "$HANDOFF" -gt 600 ]; then HANDOFF=600; fi
+          (
+            sleep "$HANDOFF"
+            if pgrep -f "run_encrypted.py" >/dev/null; then
+              if curl -sf -X POST \
+                   -H "Authorization: Bearer ${GH_TOKEN}" \
+                   -H "Accept: application/vnd.github+json" \
+                   "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/run-bot.yml/dispatches" \
+                   -d '{"ref":"main","inputs":{"minutes":"356","wipe_db":"false"}}'; then
+                echo "$(date -u +%H:%M:%S) UTC ✅ اجرای بعدی رزرو شد — بعد از این ران بی‌وقفه بالا می‌آید"
+              else
+                echo "$(date -u +%H:%M:%S) UTC ⚠️ رزرو اجرای بعدی ناموفق — cron و نگهبان پشتیبان‌اند"
+              fi
+            else
+              echo "$(date -u +%H:%M:%S) UTC ⛔ ربات زنده نماند — اجرای بعدی رزرو نشد (ضد حلقه)"
+            fi
+          ) </dev/null >handoff.log 2>&1 &
+          HANDOFF_PID=$!
+
+          # ⚠️ گیت‌هاب اسکریپت را با bash -e اجرا می‌کند؛ بدون set +e، کد 124 (پایان
+          #    عادی timeout) همین‌جا اسکریپت را می‌کشت و «هر» ران قرمز (failure) می‌شد.
+          set +e
           set -o pipefail
-          timeout -s TERM "${MINUTES}m" python -u run_encrypted.py 2>&1 | tee bot_run.log
+          timeout -k 60s -s TERM "${MINUTES}m" python -u run_encrypted.py 2>&1 | tee bot_run.log
           CODE=${PIPESTATUS[0]}
-          if [ "$CODE" != "0" ] && [ "$CODE" != "124" ] && [ "$CODE" != "143" ]; then
-            echo "::error::💥 ربات زودتر از موعد متوقف شد (کد خروج $CODE) — انتهای لاگ:"
-            tail -n 25 bot_run.log || true
-            { echo "### 💥 توقف زودهنگام ربات (کد $CODE)"; echo '```'; tail -n 25 bot_run.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
-            exit "$CODE"
-          fi
-          echo "🏁 پایان زمان اجرا (timeout) — ربات تمیز خاموش شد"
+          set -e
+          kill "$HANDOFF_PID" 2>/dev/null || true
+
+          echo "──── 🔗 زنجیرهٔ بی‌وقفه ────"
+          cat handoff.log 2>/dev/null || true
+          [ -s handoff.log ] || echo "ℹ️ رزرو اجرای بعدی انجام نشد (ران کوتاه‌تر از زمان رزرو بود)"
+          { echo "### 🔗 زنجیرهٔ بی‌وقفه"; echo '```'; cat handoff.log 2>/dev/null || echo "—"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+          # 0 = خودش تمام شد · 124 = پایان زمان (عادی) · 137 = KILL بعد از مهلت · 143 = TERM
+          case "$CODE" in
+            0|124|137|143)
+              echo "🏁 پایان زمان اجرا — ربات تمیز خاموش شد (کد $CODE)" ;;
+            *)
+              echo "::error::💥 ربات زودتر از موعد متوقف شد (کد خروج $CODE) — انتهای لاگ:"
+              tail -n 25 bot_run.log || true
+              { echo "### 💥 توقف زودهنگام ربات (کد $CODE)"; echo '```'; tail -n 25 bot_run.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+              exit "$CODE" ;;
+          esac
 
       - name: 📊 گزارش این اجرا
         if: always()
@@ -192,13 +266,30 @@ jobs:
           git config user.name "ariamirbot[actions]"
           git config user.email "ariamirbot@users.noreply.github.com"
           git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git fetch -q origin db-backup 2>/dev/null && git reset -q --soft origin/db-backup || true
-          git add data/bot.db.enc
-          if git commit -q -m "💾 بکاپ رمزشده دیتابیس — $(date -u +'%Y-%m-%d %H:%M:%S') UTC"; then
-            git push -q origin db-backup && echo "✅ دیتابیس رمزشده برای اجرای بعدی ذخیره شد 🔐"
+          # v4.2.1:
+          #  • --depth=1 → فقط آخرین کامیت (برنچ ده‌ها هزار کامیت اسنپ‌شات دارد)
+          #  • reset «mixed» به‌جای --soft → ایندکس = درخت فعلی برنچ؛ قبلاً ایندکس خالی
+          #    می‌ماند و هر بکاپ، panel/snapshot.json.enc (و فرمان‌های پنل) را «پاک» می‌کرد
+          #  • اگر push رد شد (مثلاً پنل همزمان فرمان نوشت) → دوباره fetch و تلاش
+          SAVED=0
+          for TRY in 1 2 3; do
+            if git fetch -q --depth=1 origin db-backup 2>/dev/null; then
+              git reset -q origin/db-backup
+            fi
+            git add data/bot.db.enc
+            git commit -q -m "💾 بکاپ رمزشده دیتابیس — $(date -u +'%Y-%m-%d %H:%M:%S') UTC" || true
+            if git push -q origin HEAD:db-backup 2>/dev/null; then SAVED=1; break; fi
+            echo "⏳ تلاش $TRY برای ذخیره ناموفق — دوباره..."
+            git reset -q --soft HEAD~1 2>/dev/null || true
+            sleep $((TRY * 3))
+          done
+          if [ "$SAVED" = "1" ]; then
+            echo "✅ دیتابیس رمزشده برای اجرای بعدی ذخیره شد 🔐"
             echo "- 💾 دیتابیس رمزشده در db-backup ذخیره شد (با همان SRC_KEY باز می‌شود)" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "ℹ️ تغییری در دیتابیس نبود"
+            echo "::error::💾 ذخیرهٔ دیتابیس در db-backup ناموفق ماند — نسخهٔ رمزشده در آرتیفکت همین ران هست"
+            cp data/bot.db.enc "$GITHUB_WORKSPACE/data/bot.db.enc" 2>/dev/null || true
+            exit 1
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
